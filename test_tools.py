@@ -1,6 +1,6 @@
-from tools import load_dataset
+from tools import load_dataframe
 
-df = load_dataset(
+df = load_dataframe(
     "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
 )
 
