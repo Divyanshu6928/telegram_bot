@@ -1,40 +1,41 @@
-import json
-from google import genai
-from config import GEMINI_API_KEY
-from config import MODEL_NAME
+from planner import choose_operation
+from executor import execute
+from tools import extract_urls, load_dataframe
+from logger import RunLogger
 
-client = genai.Client(api_key=GEMINI_API_KEY)
-
-SYSTEM_PROMPT = """
-You are an expert data analyst.
-
-The user may ask questions about:
-- CSV data
-- Excel files
-- JSON
-- Public datasets
-- MOSPI
-- Statistics
-
-Always solve the problem.
-
-IMPORTANT:
-Return ONLY the requested JSON object.
-Never include markdown.
-Never explain your reasoning.
-"""
 
 def solve(question, history):
-    prompt = SYSTEM_PROMPT + "\n\n"
 
-    for msg in history:
-        prompt += f"{msg['role']}: {msg['content']}\n"
+    logger = RunLogger()
 
-    prompt += f"user: {question}"
+    logger.log("received_question", question)
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-    )                   
+    urls = extract_urls(question)
 
-    return response.text.strip()
+    if not urls:
+
+        logger.log("no_dataset")
+
+        return {
+            "answer": "No dataset URL found.",
+            "log_file": logger.filename
+        }
+
+    logger.log("dataset_found", urls[0])
+
+    df = load_dataframe(urls[0])
+
+    logger.log("dataset_loaded", {"rows": len(df)})
+
+    operation = choose_operation(question)
+
+    logger.log("operation", operation)
+
+    result = execute(operation, df)
+
+    logger.log("completed")
+
+    return {
+        "answer": result,
+        "log_file": logger.filename
+    }

@@ -1,22 +1,29 @@
 import json
-import os
+import uuid
+from pathlib import Path
 from datetime import datetime
 
-LOG_DIR = "logs"
-
-os.makedirs(LOG_DIR, exist_ok=True)
-
-
-def create_log():
-
-    filename = datetime.now().strftime("%Y%m%d_%H%M%S.jsonl")
-
-    path = os.path.join(LOG_DIR, filename)
-
-    return path
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
 
 
-def log(path, event):
+class RunLogger:
 
-    with open(path, "a", encoding="utf8") as f:
-        f.write(json.dumps(event) + "\n")
+    def __init__(self):
+        self.run_id = str(uuid.uuid4())
+        self.file = LOG_DIR / f"{self.run_id}.jsonl"
+
+    def log(self, step, data=None):
+
+        event = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "step": step,
+            "data": data
+        }
+
+        with open(self.file, "a") as f:
+            f.write(json.dumps(event) + "\n")
+
+    @property
+    def filename(self):
+        return self.file.name
