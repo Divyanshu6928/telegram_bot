@@ -2,13 +2,16 @@ from telegram import Update
 from telegram.ext import Application, MessageHandler, ContextTypes, filters
 from dotenv import load_dotenv
 import os
+import json
 from memory import add_message, get_history
-from agent import solve
+from agent import Agent
 
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+agent = Agent()
 
 
 async def handle_message(update, context):
@@ -24,15 +27,17 @@ async def handle_message(update, context):
 
         history = get_history(user_id)
 
-        print("Calling Gemini...")
+        print("Calling Agent...")
 
-        answer = solve(text, history)
+        result = agent.solve(text)
 
-        print("Gemini replied:", answer)
+        print("Agent replied:", result)
 
-        add_message(user_id, "assistant", answer)
+        add_message(user_id, "assistant", json.dumps(result))
 
-        await update.message.reply_text(answer)
+        await update.message.reply_text(
+            json.dumps(result, indent=2)
+        )
 
     except Exception as e:
         print("ERROR:", e)

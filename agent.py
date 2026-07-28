@@ -1,41 +1,50 @@
-from planner import choose_operation
-from executor import execute
+import json
 from tools import extract_urls, load_dataframe
 from logger import RunLogger
 
 
-def solve(question, history):
+class Agent:
 
-    logger = RunLogger()
+    def __init__(self):
+        self.logger = RunLogger()
 
-    logger.log("received_question", question)
+    def solve(self, question: str):
 
-    urls = extract_urls(question)
+        self.logger.log("question", question)
 
-    if not urls:
+        urls = extract_urls(question)
 
-        logger.log("no_dataset")
+        if not urls:
+            self.logger.log("error", "No dataset URL found")
 
-        return {
-            "answer": "No dataset URL found.",
-            "log_file": logger.filename
+            return {
+                "answer": "No dataset URL found in the message.",
+                "log_file": self.logger.filename
+            }
+
+        url = urls[0]
+
+        self.logger.log("dataset_url", url)
+
+        df = load_dataframe(url)
+
+        self.logger.log(
+            "dataset_loaded",
+            {
+                "rows": len(df),
+                "columns": list(df.columns)
+            }
+        )
+
+        answer = {
+            "rows": len(df),
+            "columns": list(df.columns),
+            "shape": list(df.shape)
         }
 
-    logger.log("dataset_found", urls[0])
+        self.logger.log("completed")
 
-    df = load_dataframe(urls[0])
-
-    logger.log("dataset_loaded", {"rows": len(df)})
-
-    operation = choose_operation(question)
-
-    logger.log("operation", operation)
-
-    result = execute(operation, df)
-
-    logger.log("completed")
-
-    return {
-        "answer": result,
-        "log_file": logger.filename
-    }
+        return {
+            "answer": answer,
+            "log_file": self.logger.filename
+        }
