@@ -3,38 +3,39 @@ import re
 import requests
 import pandas as pd
 
-URL_REGEX = r"https?://[^\s]+"
+URL_PATTERN = r"https?://[^\s]+"
 
 
 def extract_urls(text: str):
-    return re.findall(URL_REGEX, text)
+    return re.findall(URL_PATTERN, text)
 
 
-def download_file(url: str):
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return response.content
+def download(url: str):
+    r = requests.get(url, timeout=60)
+    r.raise_for_status()
+    return r.content
 
 
-def load_dataset(url: str):
-    data = download_file(url)
+def load_dataframe(url: str):
 
-    lower = url.lower()
+    content = download(url)
 
-    if lower.endswith(".csv"):
-        return pd.read_csv(io.BytesIO(data))
+    url = url.lower()
 
-    if lower.endswith(".xlsx") or lower.endswith(".xls"):
-        return pd.read_excel(io.BytesIO(data))
+    if url.endswith(".csv"):
+        return pd.read_csv(io.BytesIO(content))
 
-    if lower.endswith(".json"):
-        return pd.read_json(io.BytesIO(data))
+    if url.endswith(".xlsx") or url.endswith(".xls"):
+        return pd.read_excel(io.BytesIO(content))
+
+    if url.endswith(".json"):
+        return pd.read_json(io.BytesIO(content))
 
     try:
-        tables = pd.read_html(io.BytesIO(data))
+        tables = pd.read_html(io.BytesIO(content))
         if tables:
             return tables[0]
-    except Exception:
+    except:
         pass
 
     raise Exception("Unsupported dataset")

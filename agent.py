@@ -1,57 +1,40 @@
+import json
 from google import genai
-
 from config import GEMINI_API_KEY
+from config import MODEL_NAME
 
 client = genai.Client(api_key=GEMINI_API_KEY)
-
 
 SYSTEM_PROMPT = """
 You are an expert data analyst.
 
-You receive questions from Telegram.
+The user may ask questions about:
+- CSV data
+- Excel files
+- JSON
+- Public datasets
+- MOSPI
+- Statistics
 
-Some questions include:
+Always solve the problem.
 
-CSV
-
-Tables
-
-Government datasets
-
-MOSPI URLs
-
-GitHub URLs
-
-JSON
-
-Excel
-
-Analyze them carefully.
-
-IMPORTANT
-
-Your final output MUST be only the requested JSON.
-
-No markdown.
-
-No explanations.
-
-No extra text.
+IMPORTANT:
+Return ONLY the requested JSON object.
+Never include markdown.
+Never explain your reasoning.
 """
 
-
 def solve(question, history):
+    prompt = SYSTEM_PROMPT + "\n\n"
 
-    prompt = SYSTEM_PROMPT
+    for msg in history:
+        prompt += f"{msg['role']}: {msg['content']}\n"
 
-    for item in history:
-        prompt += f"\n{item['role']}: {item['content']}"
-
-    prompt += f"\nUser: {question}"
+    prompt += f"user: {question}"
 
     response = client.models.generate_content(
-        model="gemini-2.5-pro",
-        contents=prompt
-    )
+        model=MODEL_NAME,
+        contents=prompt,
+    )                   
 
-    return response.text
+    return response.text.strip()
